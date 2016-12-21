@@ -42,9 +42,9 @@ public:
 	/// Transform the given array value
 	/// @param input The input color bytes
 	/// @return The corrected byte value
-	uint8_t adjustmentR(uint8_t inputR) const;
-	uint8_t adjustmentG(uint8_t inputG) const;
-	uint8_t adjustmentB(uint8_t inputB) const;
+	uint8_t getadjustmentR(uint8_t inputR) const;
+	uint8_t getadjustmentG(uint8_t inputG) const;
+	uint8_t getadjustmentB(uint8_t inputB) const;
 
 
 private:
