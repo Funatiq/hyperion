@@ -88,39 +88,75 @@ std::vector<ColorRgb> MultiColorAdjustment::applyAdjustment(const std::vector<Co
 		}
 		ColorRgb& color = ledColors[i];
 		
-		int RR = adjustment->_rgbRedAdjustment.adjustmentR(color.red);
-		int RG = color.red > color.green ? adjustment->_rgbRedAdjustment.adjustmentG(color.red-color.green) : 0;
-		int RB = color.red > color.blue ? adjustment->_rgbRedAdjustment.adjustmentB(color.red-color.blue) : 0;
+		uint8_t OR = 0, OG = 0, OB = 0;
 		
-		int GR = color.green > color.red ? adjustment->_rgbGreenAdjustment.adjustmentR(color.green-color.red) : 0;
-		int GG = adjustment->_rgbGreenAdjustment.adjustmentG(color.green);
-		int GB = color.green > color.blue ? adjustment->_rgbGreenAdjustment.adjustmentB(color.green-color.blue) : 0;
+		uint8_t WR = adjustment->_rgbRedAdjustment.getadjustmentR();
+		uint8_t WG = adjustment->_rgbGreenAdjustment.getadjustmentG();
+		uint8_t WB = adjustment->_rgbBlueAdjustment.getadjustmentB();
 		
-		int BR = color.blue > color.red ? adjustment->_rgbBlueAdjustment.adjustmentR(color.blue-color.red) : 0;
-		int BG = color.blue > color.green ? adjustment->_rgbBlueAdjustment.adjustmentG(color.blue-color.green) : 0;
-		int BB = adjustment->_rgbBlueAdjustment.adjustmentB(color.blue);
-				
-		int ledR = RR + GR + BR;
-		int maxR = (int)adjustment->_rgbRedAdjustment.getadjustmentR();
-		int ledG = RG + GG + BG;
-		int maxG = (int)adjustment->_rgbGreenAdjustment.getadjustmentG();
-		int ledB = RB + GB + BB;
-		int maxB = (int)adjustment->_rgbBlueAdjustment.getadjustmentB();
+		uint8_t RR = color.red;
+		uint8_t	RG = adjustment->_rgbRedAdjustment.getadjustmentG(color.red);
+		uint8_t	RB = adjustment->_rgbRedAdjustment.getadjustmentB(color.red);
 		
-		if (ledR > maxR)
-		  color.red = (uint8_t)maxR;
-		else
-		  color.red = (uint8_t)ledR;
+		uint8_t GR = adjustment->_rgbGreenAdjustment.getadjustmentR(255-color.red);
+		uint8_t	GG = (255-color.red);
+		uint8_t	GB = adjustment->_rgbGreenAdjustment.getadjustmentB(255-color.red);
 		
-		if (ledG > maxG)
-		  color.green = (uint8_t)maxG;
-		else
-		  color.green = (uint8_t)ledG;
+		uint8_t BR =  adjustment->_rgbBlueAdjustment.getadjustmentR(255-color.red);
+		uint8_t	BG = adjustment->_rgbBlueAdjustment.getadjustmentG(255-color.red);
+		uint8_t	BB = (255-color.red);
 		
-		if (ledB > maxB)
-		  color.blue = (uint8_t)maxB;
-		else
-		  color.blue = (uint8_t)ledB;
+		uint8_t CR = (uint16_t) adjustment->_rgbGreenAdjustment.getadjustmentR(255-color.red)+adjustment->_rgbBlueAdjustment.getadjustmentR(255-color.red) < 255 ? 
+			adjustment->_rgbGreenAdjustment.getadjustmentR(255-color.red)+adjustment->_rgbBlueAdjustment.getadjustmentR(255-color.red) : 255;
+		uint8_t	CG = adjustment->_rgbGreenAdjustment.getadjustmentG(255-color.red);
+		uint8_t	CB = adjustment->_rgbBlueAdjustment.getadjustmentB(255-color.red);
+		
+		uint8_t MR = adjustment->_rgbRedAdjustment.getadjustmentR(color.red);
+		uint8_t	MG = (uint16_t) adjustment->_rgbRedAdjustment.getadjustmentG(color.red)+adjustment->_rgbBlueAdjustment.getadjustmentG(color.red) < 255 ? 
+			adjustment->_rgbRedAdjustment.getadjustmentG(color.red)+adjustment->_rgbBlueAdjustment.getadjustmentG(color.red) : 255;
+		uint8_t	MB = adjustment->_rgbBlueAdjustment.getadjustmentB(color.red);
+		
+		uint8_t YR = adjustment->_rgbRedAdjustment.getadjustmentR(color.red);
+		uint8_t	YG = adjustment->_rgbGreenAdjustment.getadjustmentG(color.red);
+		uint8_t	YB = (uint16_t) adjustment->_rgbRedAdjustment.getadjustmentB(color.red)+adjustment->_rgbGreenAdjustment.getadjustmentB(color.red) < 255 ? 
+			adjustment->_rgbRedAdjustment.getadjustmentB(color.red)+adjustment->_rgbGreenAdjustment.getadjustmentB(color.red) : 255;
+		// red
+		uint8_t s1 = OR + RR;
+		uint8_t e1 = GR + YR;
+		
+		uint8_t s2 = BR + MR;
+		uint8_t e2 = CR + WR;
+		
+		uint8_t s3 = (uint16_t)s1*(1-color.green)/255 + (uint16_t)e1*color.green/255
+		uint8_t e3 = (uint16_t)s2*(1-color.green)/255 + (uint16_t)e2*color.green/255
+		
+		uint8_t ledR = (uint16_t)s3*(1-color.blue)/255 + (uint16_t)e3*color.blue/255;
+		// green
+		s1 = OG + RG;
+		e1 = GG + YG;
+		
+		s2 = BG + MG;
+		e2 = CG + WG;
+		
+		s3 = (uint16_t)s1*(1-color.green)/255 + (uint16_t)e1*color.green/255
+		e3 = (uint16_t)s2*(1-color.green)/255 + (uint16_t)e2*color.green/255
+		
+		uint8_t ledG = (uint16_t)s3*(1-color.blue)/255 + (uint16_t)e3*color.blue/255;
+		// blue
+		s1 = OB + RB;
+		e1 = GB + YB;
+		
+		s2 = BB + MB;
+		e2 = CB + WB;
+		
+		s3 = (uint16_t)s1*(1-color.green)/255 + (uint16_t)e1*color.green/255
+		e3 = (uint16_t)s2*(1-color.green)/255 + (uint16_t)e2*color.green/255
+		
+		uint8_t ledB = (uint16_t)s3*(1-color.blue)/255 + (uint16_t)e3*color.blue/255;
+		
+		color.red   = ledR;
+		color.green = ledG;
+		color.blue  = ledB;
 	}
 	return ledColors;
 }
